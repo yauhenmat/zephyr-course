@@ -1,0 +1,12 @@
+/ {
+	aliases {
+        led1 = &red_led_4;
+	};
+
+	leds: leds {
+        red_led_4: led_4 {
+            gpios = <&gpiob 0x6 0x0>;
+        };
+	};
+};
+
