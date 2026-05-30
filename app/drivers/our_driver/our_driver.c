@@ -12,6 +12,10 @@ struct our_driver_config {
     struct gpio_dt_spec led;
 };
 
+struct our_driver_data {
+    uint32_t counter;
+};
+
 static int channel_get_my_impl(const struct device *dev,
 				               enum sensor_channel chan,
 				               struct sensor_value *val) {
@@ -37,9 +41,28 @@ static int sample_fetch_my_impl(const struct device *dev,
     return 0;
 }
 
-static DEVICE_API(sensor, api_iomico_lecture) = {
-    .channel_get = channel_get_my_impl,
-    .sample_fetch = sample_fetch_my_impl,
+static int set_counter_impl(const struct device *dev, uint32_t value)
+{
+    struct our_driver_data *data = dev->data;
+
+    data->counter = value;
+
+    LOG_INF("Counter changed to %u", value);
+
+    return 0;
+}
+
+struct our_driver_api {
+    struct sensor_driver_api sensor_api;
+    int (*set_counter)(const struct device *dev, uint32_t value);
+};
+
+static const struct our_driver_api api_iomico_lecture = {
+    .sensor_api = {
+        .channel_get = channel_get_my_impl,
+        .sample_fetch = sample_fetch_my_impl,
+    },
+    .set_counter = set_counter_impl,
 };
 
 // Init fn
@@ -58,11 +81,30 @@ static int init(const struct device *dev) {
     return 0;
 }
 
-#define DEV_INST(inst) \
+int our_driver_set_counter(const struct device *dev, uint32_t value)
+{
+    const struct our_driver_api *api =
+        (const struct our_driver_api *)dev->api;
+
+    return api->set_counter(dev, value);
+}
+
+#define DEV_INST(inst)                                              \
+    static struct our_driver_data data_##inst = {                   \
+        .counter = 0,                                               \
+    };                                                              \
+                                                                    \
     static const struct our_driver_config cfg_##inst = {            \
         .led = GPIO_DT_SPEC_INST_GET(inst, led_gpios),              \
     };                                                              \
                                                                     \
-    DEVICE_DT_INST_DEFINE(inst, init, NULL, NULL, &cfg_##inst, POST_KERNEL, 80, &api_iomico_lecture);
+    DEVICE_DT_INST_DEFINE(inst,                                     \
+                          init,                                     \
+                          NULL,                                     \
+                          &data_##inst,                             \
+                          &cfg_##inst,                              \
+                          POST_KERNEL,                              \
+                          80,                                       \
+                          &api_iomico_lecture);
 
 DT_INST_FOREACH_STATUS_OKAY(DEV_INST);

@@ -2,6 +2,7 @@
 #include <zephyr/drivers/sensor.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include "our_driver.h"
 
 /* The devicetree node identifier for the "led0" alias. */
 //#define LED_NODE DT_ALIAS(app_led)
@@ -15,6 +16,9 @@ namespace {
     void test() {
         const struct device *driver = DEVICE_DT_GET(DT_NODELABEL(our_driver0));
         struct sensor_value val;
+
+        our_driver_set_counter(driver, 5555);
+
         auto ret = sensor_sample_fetch(driver);
         LOG_INF("Channel ret %d", ret);
         k_msleep(1000);

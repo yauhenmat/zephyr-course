@@ -5,5 +5,6 @@ find_package(Zephyr REQUIRED)
 project(my_zephyr_app)
 
 target_sources(app PRIVATE src/main.cpp)
+target_include_directories(app PRIVATE include)
 
 add_subdirectory(drivers/our_driver)
